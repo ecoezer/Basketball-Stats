@@ -91,10 +91,10 @@ const App = () => {
       stake = Math.max(stake, 100);
 
       const isWin = m.result === 'Over';
-      const outcome = isWin ? (stake * quote) : 0;
+      const winAmount = isWin ? (stake * quote) : 0;
 
       totalInvestment += stake;
-      totalReturns += outcome;
+      totalReturns += winAmount;
 
       history.push({
         week: m.week,
@@ -104,8 +104,8 @@ const App = () => {
         stake: stake.toFixed(2),
         result: m.result,
         win: isWin,
-        outcome: outcome.toFixed(2),
-        runningTotal: (totalReturns - totalInvestment).toFixed(2)
+        winAmount: winAmount.toFixed(2),
+        netProfit: (totalReturns - totalInvestment).toFixed(2)
       });
 
       if (isWin) {
@@ -290,7 +290,8 @@ const App = () => {
                           <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest">Quote</th>
                           <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Stake</th>
                           <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Result</th>
-                          <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest text-right">Running Total</th>
+                          <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest text-center">Win Amount</th>
+                          <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest text-right">Net Profit</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5">
@@ -307,8 +308,13 @@ const App = () => {
                                 {row.win ? 'WIN' : 'LOSS'}
                               </span>
                             </td>
-                            <td className={`px-6 py-4 text-sm font-black text-right ${parseFloat(row.runningTotal) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {parseFloat(row.runningTotal) > 0 ? '+' : ''}{row.runningTotal}€
+                            <td className="px-6 py-4 text-center">
+                              <span className={`text-xs font-black ${row.win ? 'text-emerald-400' : 'text-slate-600'}`}>
+                                {row.win ? `${row.winAmount}€` : '-'}
+                              </span>
+                            </td>
+                            <td className={`px-6 py-4 text-sm font-black text-right ${parseFloat(row.netProfit) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                              {parseFloat(row.netProfit) > 0 ? '+' : ''}{row.netProfit}€
                             </td>
                           </tr>
                         ))}
