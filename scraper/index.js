@@ -4,20 +4,34 @@ import path from 'path';
 import fs from 'fs';
 
 // Initialize Firebase Admin
-// Note: You will need to provide a serviceAccountKey.json file
-const serviceAccountPath = path.resolve('serviceAccountKey.json');
-const HAS_SERVICE_ACCOUNT = fs.existsSync(serviceAccountPath);
+// Note: Provide FIREBASE_SERVICE_ACCOUNT env var (JSON string) or serviceAccountKey.json file
+import 'dotenv/config';
 
-if (HAS_SERVICE_ACCOUNT) {
+const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+const serviceAccountPath = path.resolve('serviceAccountKey.json');
+const HAS_SERVICE_ACCOUNT_FILE = fs.existsSync(serviceAccountPath);
+
+if (serviceAccountEnv) {
+    try {
+        const serviceAccount = JSON.parse(serviceAccountEnv);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+    } catch (e) {
+        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT env var:', e);
+        process.exit(1);
+    }
+} else if (HAS_SERVICE_ACCOUNT_FILE) {
     const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
     });
 } else {
-    console.warn('serviceAccountKey.json not found. Database updates will be skipped (DRY RUN mode).');
+    console.warn('No service account found (env or file). Database updates will be skipped (DRY RUN mode).');
 }
 
 const db = admin.apps.length > 0 ? admin.firestore() : null;
+const HAS_SERVICE_ACCOUNT = !!db;
 const DRY_RUN = !HAS_SERVICE_ACCOUNT;
 
 const BASE_URL = 'https://www.mackolik.com/basketbol/puan-durumu/avrupa-euroleague/fikstur/8ds5tn5aaaoqkqh0fqwubxjax';
@@ -190,15 +204,16 @@ async function scrapeBettingInfo(page) {
 }
 
 async function saveToFirebase(data) {
-    // Save to match history
-    await db.collection('matches').add(data);
+    const matchId = `${data.week}_${data.homeTeam.replace(/\s+/g, '_')}_${data.awayTeam.replace(/\s+/g, '_')}`;
 
-    // Update home team matches
-    await db.collection('teams').doc(data.homeTeam).collection('history').add(data);
-    // Update away team matches
-    await db.collection('teams').doc(data.awayTeam).collection('history').add(data);
+    // Save/Update in global matches collection
+    await db.collection('matches').doc(matchId).set(data, { merge: true });
 
-    console.log(`    Saved to Firebase.`);
+    // Save/Update in team-specific history
+    await db.collection('teams').doc(data.homeTeam).collection('history').doc(matchId).set(data, { merge: true });
+    await db.collection('teams').doc(data.awayTeam).collection('history').doc(matchId).set(data, { merge: true });
+
+    console.log(`    Saved/Updated ID ${matchId} in Firebase.`);
 }
 
 async function goToFirstWeek(page) {

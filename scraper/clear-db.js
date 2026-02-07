@@ -2,16 +2,33 @@ import admin from 'firebase-admin';
 import path from 'path';
 import fs from 'fs';
 
+import 'dotenv/config';
+
+const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
 const serviceAccountPath = path.resolve('serviceAccountKey.json');
-if (!fs.existsSync(serviceAccountPath)) {
-    console.error('serviceAccountKey.json not found. Cannot clear DB.');
+const HAS_SERVICE_ACCOUNT_FILE = fs.existsSync(serviceAccountPath);
+
+if (!serviceAccountEnv && !HAS_SERVICE_ACCOUNT_FILE) {
+    console.error('No service account found (env or file). Cannot clear DB.');
     process.exit(1);
 }
 
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-});
+if (serviceAccountEnv) {
+    try {
+        const serviceAccount = JSON.parse(serviceAccountEnv);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+    } catch (e) {
+        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT env var:', e);
+        process.exit(1);
+    }
+} else {
+    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+    admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+    });
+}
 
 const db = admin.firestore();
 
@@ -45,12 +62,15 @@ async function deleteQueryBatch(db, query, resolve) {
 }
 
 console.log('Clearing "matches" collection...');
-deleteCollection('matches', 100)
-    .then(() => {
-        console.log('Successfully cleared "matches" collection.');
-        process.exit(0);
-    })
-    .catch((err) => {
-        console.error('Error clearing collection:', err);
-        process.exit(1);
-    });
+await deleteCollection('matches', 100);
+console.log('Successfully cleared "matches" collection.');
+
+console.log('Clearing team histories...');
+const teamsSnapshot = await db.collection('teams').get();
+for (const teamDoc of teamsSnapshot.docs) {
+    console.log(`  Clearing history for ${teamDoc.id}...`);
+    await deleteCollection(`teams/${teamDoc.id}/history`, 100);
+}
+console.log('Successfully cleared all team histories.');
+
+process.exit(0);
