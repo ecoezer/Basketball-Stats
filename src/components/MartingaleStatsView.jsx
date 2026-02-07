@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 
-const MartingaleStatsView = ({ matches, teams, getMartingaleReport }) => {
+const MartingaleStatsView = ({ matches, teams, getMartingaleReport, strategy }) => {
     const { stats, totalNetProfit } = useMemo(() => {
         const computedStats = teams.map(team => {
             const report = getMartingaleReport(team);
@@ -22,39 +22,44 @@ const MartingaleStatsView = ({ matches, teams, getMartingaleReport }) => {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header Section */}
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-8 md:p-12">
+            <div className={`relative overflow-hidden rounded-3xl border backdrop-blur-2xl p-8 md:p-12 ${strategy === 'over' ? 'bg-emerald-500/5 border-emerald-500/10' : 'bg-blue-500/5 border-blue-500/10'
+                }`}>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
                     <div className="relative z-10 max-w-2xl">
-                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-4 block">Strategy Overview</span>
+                        <span className={`text-[10px] font-black uppercase tracking-[0.3em] mb-4 block ${strategy === 'over' ? 'text-emerald-400' : 'text-blue-400'
+                            }`}>Strategy Overview: {strategy.toUpperCase()}</span>
                         <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none mb-6">
-                            Global Martingale <span className="text-emerald-500">Analysis</span>
+                            Global Martingale <span className={strategy === 'over' ? 'text-emerald-500' : 'text-blue-500'}>Analysis</span>
                         </h2>
                         <p className="text-slate-400 font-medium text-sm leading-relaxed max-w-lg">
-                            A comprehensive league-wide audit of the +50€ Profit Goal strategy. Analyze risk,
+                            A comprehensive league-wide audit of the +50€ Profit Goal strategy in <b>{strategy} mode</b>. Analyze risk,
                             recovery streaks, and total bankroll performance across all 28 weeks.
                         </p>
                     </div>
 
                     <div className="relative z-10 flex flex-col items-end w-full md:w-auto">
-                        <div className="w-full px-8 py-6 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 hover:scale-105 hover:border-emerald-500/30 group">
+                        <div className={`w-full px-8 py-6 rounded-3xl border bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 hover:scale-105 group ${strategy === 'over' ? 'hover:border-emerald-500/30' : 'hover:border-blue-500/30'
+                            }`}>
                             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Current Global Bankroll</span>
                             <div className={`text-4xl md:text-5xl font-black tracking-tighter ${totalNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                 {totalNetProfit > 0 ? '+' : ''}{totalNetProfit.toLocaleString()}€
                             </div>
                             <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
                                 <div
-                                    className={`h-full transition-all duration-1000 ${totalNetProfit >= 0 ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)]'}`}
+                                    className={`h-full transition-all duration-1000 ${totalNetProfit >= 0 ? (strategy === 'over' ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]' : 'bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.5)]') : 'bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)]'}`}
                                     style={{ width: '100%' }}
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="absolute right-[-10%] top-[-20%] w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px]" />
+                <div className={`absolute right-[-10%] top-[-20%] w-96 h-96 rounded-full blur-[120px] ${strategy === 'over' ? 'bg-emerald-500/10' : 'bg-blue-500/10'
+                    }`} />
             </div>
 
             {/* Stats Table */}
-            <div className="overflow-hidden rounded-3xl border border-white/10 bg-[#0b0f1a]/50 backdrop-blur-2xl transition-all duration-500 hover:border-emerald-500/20">
+            <div className={`overflow-hidden rounded-3xl border bg-[#0b0f1a]/50 backdrop-blur-2xl transition-all duration-500 ${strategy === 'over' ? 'hover:border-emerald-500/20' : 'hover:border-blue-500/20'
+                }`}>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
@@ -71,16 +76,17 @@ const MartingaleStatsView = ({ matches, teams, getMartingaleReport }) => {
                             {stats.map((row, idx) => (
                                 <tr key={row.team} className="group hover:bg-white/[0.03] transition-all duration-300">
                                     <td className="px-6 py-5">
-                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-xl text-xs font-black ${idx === 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' :
-                                                idx < 3 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' :
-                                                    'bg-white/5 text-slate-500 border border-white/5'
+                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-xl text-xs font-black ${idx === 0 ? (strategy === 'over' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/20 text-blue-400 border border-blue-500/20') :
+                                            idx < 3 ? (strategy === 'over' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/20' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20') :
+                                                'bg-white/5 text-slate-500 border border-white/5'
                                             }`}>
                                             #{idx + 1}
                                         </span>
                                     </td>
                                     <td className="px-6 py-5">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-black text-white group-hover:text-emerald-400 transition-colors uppercase tracking-tight">{row.team}</span>
+                                            <span className={`text-sm font-black text-white transition-colors uppercase tracking-tight ${strategy === 'over' ? 'group-hover:text-emerald-400' : 'group-hover:text-blue-400'
+                                                }`}>{row.team}</span>
                                             <span className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">EuroLeague Participant</span>
                                         </div>
                                     </td>
@@ -89,8 +95,8 @@ const MartingaleStatsView = ({ matches, teams, getMartingaleReport }) => {
                                     </td>
                                     <td className="px-6 py-5 text-center">
                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black ${row.maxStreak >= 5 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/10' :
-                                                row.maxStreak >= 3 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/10' :
-                                                    'bg-emerald-500/10 text-emerald-400 border border-emerald-500/10'
+                                            row.maxStreak >= 3 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/10' :
+                                                (strategy === 'over' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/10' : 'bg-blue-500/10 text-blue-400 border border-blue-500/10')
                                             }`}>
                                             {row.maxStreak} L
                                         </span>

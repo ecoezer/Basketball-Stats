@@ -161,16 +161,23 @@ async function scrapeBettingInfo(page) {
 
                     const limit = parseFloat(limitMatch[1].replace(',', '.'));
                     const options = Array.from(m.querySelectorAll('.widget-iddaa-markets__option'));
+                    const altOption = options.find(o => {
+                        const label = o.querySelector('.widget-iddaa-markets__label, .widget-iddaa-markets__option-label')?.textContent.trim();
+                        return label === 'Alt' || label === 'Altı';
+                    });
                     const ustOption = options.find(o => {
                         const label = o.querySelector('.widget-iddaa-markets__label, .widget-iddaa-markets__option-label')?.textContent.trim();
                         return label === 'Üst' || label === 'Üstü';
                     });
 
+                    const altQuoteStr = altOption?.querySelector('.widget-iddaa-markets__value, .widget-iddaa-markets__option-value')?.textContent.trim();
+                    const altQuote = altQuoteStr ? parseFloat(altQuoteStr.replace(',', '.')) : null;
+
                     const ustQuoteStr = ustOption?.querySelector('.widget-iddaa-markets__value, .widget-iddaa-markets__option-value')?.textContent.trim();
                     const ustQuote = ustQuoteStr ? parseFloat(ustQuoteStr.replace(',', '.')) : null;
 
-                    if (!isNaN(limit) && ustQuote !== null && !isNaN(ustQuote)) {
-                        return { limit, ustQuote };
+                    if (!isNaN(limit) && (ustQuote !== null || altQuote !== null)) {
+                        return { limit, ustQuote, altQuote };
                     }
                 }
             }

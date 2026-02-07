@@ -4,6 +4,7 @@ import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 import AnalyticsView from './components/AnalyticsView';
 import MartingaleStatsView from './components/MartingaleStatsView';
+import StrategyLanding from './components/StrategyLanding';
 
 const App = () => {
   const [matches, setMatches] = useState([]);
@@ -12,6 +13,7 @@ const App = () => {
   const [profitTeam, setProfitTeam] = useState("");
   const [martingaleTeam, setMartingaleTeam] = useState("");
   const [view, setView] = useState("fixture"); // 'fixture' or 'analytics'
+  const [strategy, setStrategy] = useState(null); // 'over' or 'under'
   const weeks = Array.from({ length: 28 }, (_, i) => i + 1);
 
   // Extract unique teams from matches
@@ -39,12 +41,17 @@ const App = () => {
   // Profit Calculation Logic
   const getProfitReport = (teamName) => {
     const teamMatches = matches.filter(m => m.homeTeam === teamName || m.awayTeam === teamName);
-    const finishedMatches = teamMatches.filter(m => m.status === 'MS' && m.ustQuote && m.ustQuote !== 'TBD');
+    const finishedMatches = teamMatches.filter(m => {
+      const quote = strategy === 'over' ? m.ustQuote : m.altQuote;
+      return m.status === 'MS' && quote && quote !== 'TBD';
+    });
 
     const investment = finishedMatches.length * 100;
     const returns = finishedMatches.reduce((total, m) => {
-      if (m.result === 'Over') {
-        return total + (100 * parseFloat(m.ustQuote));
+      const isWin = strategy === 'over' ? m.result === 'Over' : m.result === 'Under';
+      const quote = strategy === 'over' ? parseFloat(m.ustQuote) : parseFloat(m.altQuote);
+      if (isWin) {
+        return total + (100 * quote);
       }
       return total;
     }, 0);
@@ -54,8 +61,8 @@ const App = () => {
       investment: investment.toFixed(2),
       returns: returns.toFixed(2),
       profit: (returns - investment).toFixed(2),
-      winCount: finishedMatches.filter(m => m.result === 'Over').length,
-      lossCount: finishedMatches.filter(m => m.result === 'Under').length
+      winCount: finishedMatches.filter(m => strategy === 'over' ? m.result === 'Over' : m.result === 'Under').length,
+      lossCount: finishedMatches.filter(m => strategy === 'over' ? m.result === 'Under' : m.result === 'Over').length
     };
   };
 
@@ -66,8 +73,11 @@ const App = () => {
     const teamMatches = matches.filter(m => m.homeTeam === teamName || m.awayTeam === teamName)
       .sort((a, b) => a.matchTimestamp - b.matchTimestamp);
 
-    // Only process matches with valid odds
-    const validMatches = teamMatches.filter(m => m.status === 'MS' && m.ustQuote && m.ustQuote !== 'TBD');
+    // Only process matches with valid odds for the selected strategy
+    const validMatches = teamMatches.filter(m => {
+      const quote = strategy === 'over' ? m.ustQuote : m.altQuote;
+      return m.status === 'MS' && quote && quote !== 'TBD';
+    });
 
     let currentStreakCount = 0;
     let accumulatedLoss = 0;
@@ -76,22 +86,20 @@ const App = () => {
     let totalReturns = 0;
 
     validMatches.forEach((m) => {
-      const quote = parseFloat(m.ustQuote);
+      const quote = parseFloat(strategy === 'over' ? m.ustQuote : m.altQuote);
       let stake = 0;
 
       if (accumulatedLoss === 0) {
         stake = 100;
       } else {
         // Martingale Goal: Win covers all previous losses plus 50€ extra profit
-        // CurrentStake * (Quote - 1) = AccumulatedLoss + 50
-        // CurrentStake = (50 + AccumulatedLoss) / (Quote - 1)
         stake = (50 + accumulatedLoss) / (quote - 1);
       }
 
       // Safety: minimum 100€
       stake = Math.max(stake, 100);
 
-      const isWin = m.result === 'Over';
+      const isWin = strategy === 'over' ? m.result === 'Over' : m.result === 'Under';
       const winAmount = isWin ? (stake * quote) : 0;
 
       totalInvestment += stake;
@@ -147,18 +155,30 @@ const App = () => {
     return groups;
   }, {});
 
+  if (!strategy) {
+    return <StrategyLanding onSelect={setStrategy} />;
+  }
+
   return (
     <div className="min-h-screen bg-[#0b0f1a] p-4 md:p-8 text-white font-sans">
       <header className="mb-12 flex flex-col items-center">
-        <div className="flex items-center space-x-4 mb-6">
-          <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center border border-white/10 shadow-2xl">
-            <span className="text-2xl">🏀</span>
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">EuroLeague</h1>
-            <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em] leading-none mt-1">Over/Under Tracker</p>
-          </div>
+        <div className="flex items-center space-x-2">
+          <h1 className="text-2xl font-black text-white italic tracking-tighter uppercase leading-none">EuroLeague</h1>
+          <div className="h-4 w-[1px] bg-white/20 mx-2" />
+          <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${strategy === 'over' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-blue-500/20 text-blue-400'
+            }`}>
+            {strategy} Strategy
+          </span>
         </div>
+        <button
+          onClick={() => setStrategy(null)}
+          className="mt-4 text-[9px] font-black text-slate-500 hover:text-white uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Switch Strategy
+        </button>
 
         {/* View Switcher Tabs */}
         <div className="flex p-1 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-xl">
@@ -500,12 +520,13 @@ const App = () => {
             )}
           </>
         ) : view === 'analytics' ? (
-          <AnalyticsView matches={matches} teams={teams} />
+          <AnalyticsView matches={matches} teams={teams} strategy={strategy} />
         ) : (
           <MartingaleStatsView
             matches={matches}
             teams={teams}
             getMartingaleReport={getMartingaleReport}
+            strategy={strategy}
           />
         )}
       </main>
