@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
 
 const MartingaleStatsView = ({ matches, teams, getMartingaleReport }) => {
-    const stats = useMemo(() => {
-        return teams.map(team => {
+    const { stats, totalNetProfit } = useMemo(() => {
+        const computedStats = teams.map(team => {
             const report = getMartingaleReport(team);
             return {
                 team,
@@ -13,21 +13,42 @@ const MartingaleStatsView = ({ matches, teams, getMartingaleReport }) => {
                 historyLength: report.history.length
             };
         }).sort((a, b) => b.netProfit - a.netProfit);
+
+        const total = computedStats.reduce((acc, curr) => acc + curr.netProfit, 0);
+
+        return { stats: computedStats, totalNetProfit: total };
     }, [teams, getMartingaleReport]);
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header Section */}
             <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl p-8 md:p-12">
-                <div className="relative z-10 max-w-2xl">
-                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-4 block">Strategy Overview</span>
-                    <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none mb-6">
-                        Global Martingale <span className="text-emerald-500">Analysis</span>
-                    </h2>
-                    <p className="text-slate-400 font-medium text-sm leading-relaxed max-w-lg">
-                        A comprehensive league-wide audit of the +50€ Profit Goal strategy. Analyze risk,
-                        recovery streaks, and total bankroll performance across all 28 weeks.
-                    </p>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+                    <div className="relative z-10 max-w-2xl">
+                        <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em] mb-4 block">Strategy Overview</span>
+                        <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter leading-none mb-6">
+                            Global Martingale <span className="text-emerald-500">Analysis</span>
+                        </h2>
+                        <p className="text-slate-400 font-medium text-sm leading-relaxed max-w-lg">
+                            A comprehensive league-wide audit of the +50€ Profit Goal strategy. Analyze risk,
+                            recovery streaks, and total bankroll performance across all 28 weeks.
+                        </p>
+                    </div>
+
+                    <div className="relative z-10 flex flex-col items-end w-full md:w-auto">
+                        <div className="w-full px-8 py-6 rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl transition-all duration-500 hover:scale-105 hover:border-emerald-500/30 group">
+                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">Current Global Bankroll</span>
+                            <div className={`text-4xl md:text-5xl font-black tracking-tighter ${totalNetProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {totalNetProfit > 0 ? '+' : ''}{totalNetProfit.toLocaleString()}€
+                            </div>
+                            <div className="mt-2 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full transition-all duration-1000 ${totalNetProfit >= 0 ? 'bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.5)]' : 'bg-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.5)]'}`}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div className="absolute right-[-10%] top-[-20%] w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px]" />
             </div>
