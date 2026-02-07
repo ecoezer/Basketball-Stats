@@ -78,19 +78,6 @@ const App = () => {
     validMatches.forEach((m) => {
       const quote = parseFloat(m.ustQuote);
       let stake = 0;
-      let isCapped = false;
-
-      const opponentName = m.homeTeam === teamName ? m.awayTeam : m.homeTeam;
-
-      // Find opponent's last result before this match
-      const opponentMatches = matches.filter(match => match.homeTeam === opponentName || match.awayTeam === opponentName)
-        .sort((a, b) => a.matchTimestamp - b.matchTimestamp);
-
-      // Find the most recent match for opponent that happened before current match time
-      const lastOpponentMatch = [...opponentMatches].reverse().find(match =>
-        match.matchTimestamp < m.matchTimestamp && match.status === 'MS'
-      );
-      const opponentWonLast = lastOpponentMatch?.result === 'Over';
 
       if (accumulatedLoss === 0) {
         stake = 100;
@@ -99,12 +86,6 @@ const App = () => {
         // CurrentStake * (Quote - 1) = AccumulatedLoss + 50
         // CurrentStake = (50 + AccumulatedLoss) / (Quote - 1)
         stake = (50 + accumulatedLoss) / (quote - 1);
-
-        // Safety Valve: If opponent is NOT on a losing streak (they won last game), cap at 100
-        if (opponentWonLast) {
-          stake = 100;
-          isCapped = true;
-        }
       }
 
       // Safety: minimum 100€
@@ -124,7 +105,6 @@ const App = () => {
         stake: stake.toFixed(2),
         result: m.result,
         win: isWin,
-        isCapped,
         winAmount: winAmount.toFixed(2),
         netProfit: (totalReturns - totalInvestment).toFixed(2)
       });
@@ -185,8 +165,8 @@ const App = () => {
           <button
             onClick={() => setView('fixture')}
             className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${view === 'fixture'
-                ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
-                : 'text-slate-500 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
+              : 'text-slate-500 hover:text-white hover:bg-white/5'
               }`}
           >
             Live Fixture
@@ -194,8 +174,8 @@ const App = () => {
           <button
             onClick={() => setView('analytics')}
             className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${view === 'analytics'
-                ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
-                : 'text-slate-500 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
+              : 'text-slate-500 hover:text-white hover:bg-white/5'
               }`}
           >
             Analytics Dashboard
@@ -203,8 +183,8 @@ const App = () => {
           <button
             onClick={() => setView('martingale-stats')}
             className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${view === 'martingale-stats'
-                ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
-                : 'text-slate-500 hover:text-white hover:bg-white/5'
+              ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
+              : 'text-slate-500 hover:text-white hover:bg-white/5'
               }`}
           >
             Martingale Stats
@@ -337,10 +317,7 @@ const App = () => {
                             <td className="px-6 py-4 text-[10px] font-black text-white uppercase">{row.opponent}</td>
                             <td className="px-6 py-4 text-xs font-bold text-blue-400">{row.quote}</td>
                             <td className="px-6 py-4 text-center">
-                              <span className="px-3 py-1 bg-white/5 rounded-lg text-xs font-black text-white border border-white/5 flex items-center justify-center gap-1 mx-auto w-fit">
-                                {row.isCapped && <span className="text-amber-400 text-[10px] animate-pulse">★</span>}
-                                {row.stake}€
-                              </span>
+                              <span className="px-3 py-1 bg-white/5 rounded-lg text-xs font-black text-white border border-white/5">{row.stake}€</span>
                             </td>
                             <td className="px-6 py-4 text-center">
                               <span className={`text-[9px] font-black px-2 py-0.5 rounded-md ${row.win ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/20 text-rose-400 border border-rose-500/20'}`}>
