@@ -3,6 +3,7 @@ import { db } from './firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 import AnalyticsView from './components/AnalyticsView';
+import MartingaleStatsView from './components/MartingaleStatsView';
 
 const App = () => {
   const [matches, setMatches] = useState([]);
@@ -183,20 +184,35 @@ const App = () => {
         <div className="flex p-1 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-xl">
           <button
             onClick={() => setView('fixture')}
-            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${view === 'fixture' ? 'bg-white/10 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${view === 'fixture'
+                ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
+                : 'text-slate-500 hover:text-white hover:bg-white/5'
+              }`}
           >
             Live Fixture
           </button>
           <button
             onClick={() => setView('analytics')}
-            className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${view === 'analytics' ? 'bg-white/10 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${view === 'analytics'
+                ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
+                : 'text-slate-500 hover:text-white hover:bg-white/5'
+              }`}
           >
             Analytics Dashboard
+          </button>
+          <button
+            onClick={() => setView('martingale-stats')}
+            className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all duration-500 ${view === 'martingale-stats'
+                ? 'bg-white text-[#0b0f1a] shadow-[0_0_40px_rgba(255,255,255,0.2)]'
+                : 'text-slate-500 hover:text-white hover:bg-white/5'
+              }`}
+          >
+            Martingale Stats
           </button>
         </div>
       </header>
 
-      <div className="mx-auto max-w-5xl">
+      <main className="mx-auto max-w-5xl">
         {view === 'fixture' ? (
           <>
             {/* Selectors */}
@@ -506,10 +522,16 @@ const App = () => {
               </div>
             )}
           </>
+        ) : view === 'analytics' ? (
+          <AnalyticsView matches={matches} teams={teams} />
         ) : (
-          <AnalyticsView matches={matches} />
+          <MartingaleStatsView
+            matches={matches}
+            teams={teams}
+            getMartingaleReport={getMartingaleReport}
+          />
         )}
-      </div>
+      </main>
     </div>
   );
 };
